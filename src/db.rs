@@ -5,15 +5,18 @@ use fluxer_neptunium::model::id::{Id, marker::GuildMarker};
 use moka::sync::Cache;
 use sqlx::PgPool;
 
-use crate::db::guilds::GuildConfig;
+use crate::db::{guild_permissions::GuildPermissionsEntry, guilds::GuildConfig};
 
 pub mod bounties;
+pub mod guild_permissions;
 pub mod guilds;
 
 #[derive(Clone)]
 pub struct DbManager {
     pool: PgPool,
     cached_guild_config: Arc<moka::sync::Cache<Id<GuildMarker>, Arc<GuildConfig>>>,
+    cached_guild_permissions:
+        Arc<moka::sync::Cache<Id<GuildMarker>, Arc<Vec<GuildPermissionsEntry>>>>,
 }
 
 impl DbManager {
@@ -26,6 +29,7 @@ impl DbManager {
         Ok(Self {
             pool,
             cached_guild_config: Arc::new(Cache::new(128)),
+            cached_guild_permissions: Arc::new(Cache::new(32)),
         })
     }
 }

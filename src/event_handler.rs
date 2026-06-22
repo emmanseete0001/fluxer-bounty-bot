@@ -24,14 +24,20 @@ pub struct Handler {
     client_id: Id<UserMarker>,
     #[expect(clippy::struct_field_names)]
     reactions_event_handler: ReactionsEventHandler,
+    bounty_workflow_image_url: String,
 }
 
 impl Handler {
-    pub fn new(db: DbManager, client_id: Id<UserMarker>) -> Self {
+    pub fn new(
+        db: DbManager,
+        client_id: Id<UserMarker>,
+        bounty_workflow_image_url: String,
+    ) -> Self {
         Self {
             db,
             client_id,
             reactions_event_handler: ReactionsEventHandler::new(),
+            bounty_workflow_image_url,
         }
     }
 }
@@ -122,6 +128,7 @@ impl EventHandler for Handler {
             guild_member: &author_guild_member,
             guild_id,
             reaction_handler_tx: &self.reactions_event_handler.tx,
+            bounty_workflow_image_url: &self.bounty_workflow_image_url,
         };
 
         if let Err(e) = match command {

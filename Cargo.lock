@@ -169,6 +169,7 @@ name = "bounty-bot"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bitflags",
  "chrono",
  "dotenvy",
  "enum-map",

@@ -28,6 +28,7 @@ pub struct CommandContext<'a> {
     pub guild_member: &'a CachedGuildMember,
     pub guild_id: Id<GuildMarker>,
     pub reaction_handler_tx: &'a UnboundedSender<ReactionsEventHandlerMessage>,
+    pub bounty_workflow_image_url: &'a str,
 }
 
 impl CommandContext<'_> {

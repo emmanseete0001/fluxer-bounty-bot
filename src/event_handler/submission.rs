@@ -1,30 +1,25 @@
 use std::time::Duration;
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use fluxer_neptunium::{
     cached_payload::CachedMessageCreate,
     create_embed,
     events::context::Context,
-    exts::{ChannelExt, MessageExt, UserExt},
-    http::endpoints::channel::CreateMessageBody,
+    exts::{ChannelExt, MessageExt},
     model::{
-        channel::message::embed::EmbedFooter,
         id::{Id, marker::GuildMarker},
         user::PartialUser,
     },
 };
 
 use crate::{
-    AVATAR_URL_BASE, STATIC_BASE,
-    colors::{FAILURE, SUBMISSION_PENDING, SUCCESS},
+    colors::{FAILURE, SUCCESS},
     db::{
         DbManager,
-        bounties::{
-            BountyCreateData, BountyNum, BountyRelatedMessage, BountyState, BountySubmissionContent,
-        },
-        guilds::{BountyInfoKey, BountySubmissionFormat, GuildConfig},
+        bounties::{BountyCreateData, BountyRelatedMessage, BountyState},
+        guilds::GuildConfig,
     },
-    util::parse_message_content_as_submission,
+    util::{bounty_content_to_message, parse_message_content_as_submission},
 };
 
 pub async fn handle_submission_create(
@@ -126,58 +121,4 @@ pub async fn handle_submission_create(
     message.delete(ctx).await?;
     message_send_result?.delete(ctx).await?;
     Ok(())
-}
-
-fn bounty_content_to_message(
-    content: &BountySubmissionContent,
-    created_by: &PartialUser,
-    format: &BountySubmissionFormat,
-    bounty_number: BountyNum,
-    created_at: DateTime<Utc>,
-) -> impl Into<CreateMessageBody> {
-    let mut content = content.iter().collect::<Vec<_>>();
-    content.sort();
-    let mut description = Vec::new();
-    let mut title = None;
-    for (key, value) in content {
-        if *key == BountyInfoKey::Title {
-            title = Some(value);
-            continue;
-        }
-        let key_title = format.titles[*key]
-            .first()
-            .map_or("*no titles for key*", String::as_str);
-        description.push(format!("## {key_title}\n{value}"));
-    }
-    let description = description.join("\n");
-
-    let avatar_url = if let Some(avatar) = &created_by.avatar {
-        format!("{AVATAR_URL_BASE}/{}/{avatar}.webp?size=128", created_by.id)
-    } else {
-        format!(
-            "{STATIC_BASE}/avatars/{}.png",
-            created_by.get_default_avatar_id()
-        )
-    };
-
-    let mut embed = create_embed!(
-        title: if let Some(title) = title {
-            title.as_str()
-        } else {
-            "*No title*"
-        },
-        description: description,
-        color: SUBMISSION_PENDING,
-        author: {
-            name: format!("{}#{} ({})", created_by.username, created_by.discriminator, created_by.id),
-            icon_url: avatar_url,
-        }
-    );
-    embed.footer = Some(EmbedFooter {
-        icon_url: None,
-        proxy_icon_url: None,
-        text: bounty_number.to_string(),
-    });
-    embed.timestamp = Some(created_at.into());
-    embed
 }

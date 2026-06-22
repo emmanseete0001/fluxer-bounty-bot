@@ -21,3 +21,10 @@ pub async fn ping(ctx: CommandContext<'_>) -> anyhow::Result<()> {
         .await?;
     Ok(())
 }
+
+pub async fn bounty_workflow(ctx: CommandContext<'_>) -> anyhow::Result<()> {
+    ctx.message
+        .reply(ctx.ctx, ctx.bounty_workflow_image_url)
+        .await?;
+    Ok(())
+}

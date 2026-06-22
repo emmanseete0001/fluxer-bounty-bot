@@ -12,13 +12,13 @@ CREATE TABLE bounties (
     -- "Finished", "Approved", "Pending", "Rejected"
     state TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
-    -- The "claimer" is the person who will or has completed the implementation of the bounty
+    -- The "claimer" or "bounty hunter" is the person who will or has completed the implementation of the bounty
     claimed_by BIGINT,
     related_message_id BIGINT,
     related_channel_id BIGINT
 );
 
-CREATE TABLE bounty_payers (
+CREATE TABLE bounty_stakeholders (
     bounty_id BIGINT NOT NULL REFERENCES bounties (bounty_id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL,
     amount INTEGER NOT NULL,
@@ -39,4 +39,14 @@ CREATE TABLE guilds (
     bounty_submission_format JSONB NOT NULL,
     command_channels BIGINT[],
     current_bounty_number BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE guild_permissions (
+    guild_id BIGINT NOT NULL REFERENCES guilds (guild_id) ON DELETE CASCADE,
+    -- "User" or "Role"
+    kind TEXT NOT NULL,
+    -- Either a user ID or a role ID, or the ID of the @everyone role (which is the same as the guild ID)
+    entity_id BIGINT NOT NULL,
+    -- Notably *not* the fluxer permissions, but rather the bounty bot permissions
+    allow BIGINT NOT NULL
 );

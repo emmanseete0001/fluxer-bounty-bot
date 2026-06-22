@@ -55,6 +55,8 @@ async fn main() -> anyhow::Result<()> {
         &dotenvy::var("CLIENT_ID").context("Failed to load CLIENT_ID from env")?,
     )
     .context("Failed to parse CLIENT_ID")?;
+    let bounty_workflow_image_url = dotenvy::var("BOUNTY_WORKFLOW_IMAGE_URL")
+        .context("Failed to load BOUNTY_WORKFLOW_IMAGE_URL from env")?;
 
     let db = DbManager::new(&database_url)
         .await
@@ -71,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
             })
             .build(),
     );
-    client.register_event_handler(Handler::new(db, client_id));
+    client.register_event_handler(Handler::new(db, client_id, bounty_workflow_image_url));
 
     client.start().await.context("Fatal client error")?;
 
