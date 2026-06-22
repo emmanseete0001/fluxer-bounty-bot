@@ -46,7 +46,7 @@ macro_rules! get_bounty_num_from_args {
     }};
 }
 
-pub async fn bounty_management(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
+pub async fn bounty_management(ctx: CommandContext<'_>, args: &'_ str) -> anyhow::Result<()> {
     // TODO: bounty managers stored in database to bypass this
     if !ctx
         .guild_member

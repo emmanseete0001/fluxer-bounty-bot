@@ -3,7 +3,7 @@ use fluxer_neptunium::{create_embed, exts::MessageExt};
 
 use crate::{colors::DEFAULT, commands::CommandContext};
 
-pub async fn ping(ctx: CommandContext<'_>) -> anyhow::Result<()> {
+pub async fn ping(ctx: CommandContext<'_>, _args: &str) -> anyhow::Result<()> {
     let latency = {
         let now = Utc::now();
         let created_at: DateTime<Utc> = ctx.message.timestamp.into();
@@ -22,7 +22,7 @@ pub async fn ping(ctx: CommandContext<'_>) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn bounty_workflow(ctx: CommandContext<'_>) -> anyhow::Result<()> {
+pub async fn bounty_workflow(ctx: CommandContext<'_>, _args: &str) -> anyhow::Result<()> {
     ctx.message
         .reply(ctx.ctx, ctx.bounty_workflow_image_url)
         .await?;

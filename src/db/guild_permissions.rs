@@ -43,6 +43,7 @@ bitflags! {
         const APPROVE_BOUNTIES = 1 << 1;
         const REJECT_BOUNTIES = 1 << 2;
         const DELETE_BOUNTIES = 1 << 3;
+        const MODIFY_GUILD_CONFIG = 1 << 4;
     }
 }
 
@@ -71,7 +72,7 @@ impl TryFrom<GuildPermissionsEntrySchema> for GuildPermissionsEntry {
             guild_id: value.guild_id.cast_unsigned().into(),
             entity: match value.kind.to_lowercase().as_str() {
                 "user" => GuildPermissionEntity::User(value.entity_id.cast_unsigned().into()),
-                "role" => GuildPermissionEntity::User(value.entity_id.cast_unsigned().into()),
+                "role" => GuildPermissionEntity::Role(value.entity_id.cast_unsigned().into()),
                 _ => bail!("Failed to parse value.kind which is \"{}\"", value.kind),
             },
             allow: BotPermissions::from_bits_truncate(value.allow.cast_unsigned()),

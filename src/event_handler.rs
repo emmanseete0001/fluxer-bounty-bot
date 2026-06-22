@@ -11,7 +11,7 @@ use fluxer_neptunium::{
 };
 
 use crate::{
-    commands::{self, CommandContext},
+    commands::{CommandContext, CommandDispatcher, new_dispatcher_with_commands},
     db::DbManager,
     event_handler::{reactions::ReactionsEventHandler, submission::handle_submission_create},
 };
@@ -25,6 +25,7 @@ pub struct Handler {
     #[expect(clippy::struct_field_names)]
     reactions_event_handler: ReactionsEventHandler,
     bounty_workflow_image_url: String,
+    command_dispatcher: CommandDispatcher,
 }
 
 impl Handler {
@@ -38,6 +39,7 @@ impl Handler {
             client_id,
             reactions_event_handler: ReactionsEventHandler::new(),
             bounty_workflow_image_url,
+            command_dispatcher: new_dispatcher_with_commands(),
         }
     }
 }
@@ -119,8 +121,6 @@ impl EventHandler for Handler {
             full_command
         };
 
-        let (command, args) = full_command.split_once(' ').unwrap_or((full_command, ""));
-
         let command_context = CommandContext {
             ctx: &ctx,
             db: &self.db,
@@ -131,16 +131,12 @@ impl EventHandler for Handler {
             bounty_workflow_image_url: &self.bounty_workflow_image_url,
         };
 
-        if let Err(e) = match command {
-            "ping" => commands::misc::ping(command_context).await,
-            "bounty" => commands::bounty_management::bounty_management(command_context, args).await,
-            "config" | "communityconfig" | "community-config" | "guildconfig" | "guild-config"
-            | "serverconfig" | "server-config" | "cfg" => {
-                commands::guild_config::guild_config(command_context, args).await
-            }
-            _ => Ok(()),
-        } {
-            tracing::error!("Error executing command `{command}`: {e}");
+        if let Err(e) = self
+            .command_dispatcher
+            .execute(full_command, command_context)
+            .await
+        {
+            tracing::error!("Error executing command: {e}");
         }
 
         Ok(())

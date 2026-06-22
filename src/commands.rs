@@ -1,17 +1,29 @@
+use std::{collections::HashMap, pin::Pin, sync::Arc, time::Duration};
+
+use anyhow::Context as _;
 use chrono::{TimeDelta, Utc};
 use fluxer_neptunium::{
     cache::CachedGuildMember,
     cached_payload::CachedMessageCreate,
+    create_embed,
     events::context::Context,
-    model::id::{
-        Id,
-        marker::{GuildMarker, MessageMarker},
+    exts::{GuildMemberExt, MessageExt},
+    model::{
+        guild::permissions::Permissions,
+        id::{
+            Id,
+            marker::{GuildMarker, MessageMarker},
+        },
     },
 };
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
-    db::DbManager,
+    colors::FAILURE,
+    db::{
+        DbManager,
+        guild_permissions::{BotPermissions, GuildPermissionEntity},
+    },
     event_handler::reactions::{
         ReactionExpiryHandlerFn, ReactionHandler, ReactionsEventHandlerMessage,
     },
@@ -67,4 +79,149 @@ impl CommandContext<'_> {
             tracing::error!("The reaction handler is gone.");
         }
     }
+
+    /// Does not take Fluxer permissions into account in any way.
+    pub async fn my_permissions(&self) -> anyhow::Result<BotPermissions> {
+        let guild_permissions = self.db.list_guild_permissions(self.guild_id).await?;
+        let my_roles = &self.guild_member.roles;
+        let mut my_permissions = BotPermissions::empty();
+        for permission in &*guild_permissions {
+            match permission.entity {
+                GuildPermissionEntity::User(id) => {
+                    if id == self.guild_member.id {
+                        my_permissions |= permission.allow;
+                    }
+                }
+                GuildPermissionEntity::Role(id) => {
+                    if id == self.guild_id.cast() || my_roles.contains(&id) {
+                        my_permissions |= permission.allow;
+                    }
+                }
+            }
+        }
+        Ok(my_permissions)
+    }
+
+    /// If the user has Fluxer Administrator permissions, will also return true.
+    pub async fn has_permissions(&self, permissions: BotPermissions) -> anyhow::Result<bool> {
+        if self
+            .guild_member
+            .has_permissions(self.ctx, Permissions::ADMINISTRATOR)
+            .await?
+        {
+            return Ok(true);
+        }
+        Ok(self.my_permissions().await?.contains(permissions))
+    }
+}
+
+pub trait CommandExecuteFn<'a>: Send + Sync + 'static {
+    fn call(
+        &self,
+        ctx: CommandContext<'a>,
+        args: &'a str,
+    ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>>;
+}
+
+impl<'a, F, Fut> CommandExecuteFn<'a> for F
+where
+    F: Fn(CommandContext<'a>, &'a str) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = anyhow::Result<()>> + Send + 'a,
+{
+    fn call(
+        &self,
+        ctx: CommandContext<'a>,
+        args: &'a str,
+    ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send + 'a>> {
+        Box::pin(self(ctx, args))
+    }
+}
+
+pub struct CommandDispatcher {
+    #[expect(clippy::type_complexity)]
+    commands: HashMap<&'static str, (BotPermissions, Arc<dyn for<'a> CommandExecuteFn<'a>>)>,
+}
+
+impl CommandDispatcher {
+    #[expect(clippy::type_complexity)]
+    pub fn new<const N: usize>(
+        commands: [(
+            &[&'static str],
+            BotPermissions,
+            Arc<dyn for<'a> CommandExecuteFn<'a>>,
+        ); N],
+    ) -> Self {
+        let mut commands_map = HashMap::new();
+        for (names, permissions, f) in commands {
+            for &name in names {
+                if commands_map
+                    .insert(name, (permissions, Arc::clone(&f)))
+                    .is_some()
+                {
+                    tracing::warn!("Duplicate command name: {name}");
+                }
+            }
+        }
+        Self {
+            commands: commands_map,
+        }
+    }
+
+    /// The prefix must already be stripped.
+    pub async fn execute(&self, command: &str, ctx: CommandContext<'_>) -> anyhow::Result<()> {
+        let (command, args) = command.trim().split_once(' ').unwrap_or((command, ""));
+        let Some((required_permissions, f)) = self.commands.get(command) else {
+            return Ok(());
+        };
+        if !ctx.has_permissions(*required_permissions).await? {
+            let message = ctx.message.reply(ctx.ctx, create_embed!(
+                description: "You do not have the required permissions to perform this command.",
+                color: FAILURE,
+            )).await?;
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            message.delete(ctx.ctx).await?;
+            return Ok(());
+        }
+
+        f.call(ctx, args)
+            .await
+            .with_context(|| format!("Error executing command `{command}` with args `{args}`"))?;
+
+        Ok(())
+    }
+}
+
+pub fn new_dispatcher_with_commands() -> CommandDispatcher {
+    CommandDispatcher::new([
+        (&["ping"], BotPermissions::empty(), Arc::new(misc::ping)),
+        (
+            &["bounty"],
+            BotPermissions::empty(),
+            Arc::new(bounty_management::bounty_management),
+        ),
+        (
+            &[
+                "config",
+                "communityconfig",
+                "community-config",
+                "guildconfig",
+                "guild-config",
+                "serverconfig",
+                "server-config",
+                "cfg",
+            ],
+            BotPermissions::MODIFY_GUILD_CONFIG,
+            Arc::new(guild_config::guild_config),
+        ),
+        (
+            &[
+                "bounty-workflow",
+                "bountyworkflow",
+                "workflow",
+                "bounty-workflow-image",
+            ],
+            BotPermissions::empty(),
+            Arc::new(misc::bounty_workflow),
+        ),
+    ])
 }
