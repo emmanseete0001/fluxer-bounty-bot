@@ -33,6 +33,87 @@ impl DbManager {
             .insert(guild_id, Arc::clone(&guild_config));
         Ok(guild_config)
     }
+
+    pub async fn set_bounty_submission_channel(
+        &self,
+        guild_id: Id<GuildMarker>,
+        channel_id: Option<Id<ChannelMarker>>,
+    ) -> anyhow::Result<()> {
+        sqlx::query!(
+            "UPDATE guilds
+            SET bounty_submission_channel = $1
+            WHERE guild_id = $2",
+            channel_id.map(|id| id.into_inner().cast_signed()),
+            guild_id.into_inner().cast_signed(),
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+    pub async fn set_approval_queue_channel(
+        &self,
+        guild_id: Id<GuildMarker>,
+        channel_id: Option<Id<ChannelMarker>>,
+    ) -> anyhow::Result<()> {
+        sqlx::query!(
+            "UPDATE guilds
+            SET approval_queue_channel = $1
+            WHERE guild_id = $2",
+            channel_id.map(|id| id.into_inner().cast_signed()),
+            guild_id.into_inner().cast_signed(),
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+    pub async fn set_claimed_bounties_channel(
+        &self,
+        guild_id: Id<GuildMarker>,
+        channel_id: Option<Id<ChannelMarker>>,
+    ) -> anyhow::Result<()> {
+        sqlx::query!(
+            "UPDATE guilds
+            SET claimed_bounties_channel = $1
+            WHERE guild_id = $2",
+            channel_id.map(|id| id.into_inner().cast_signed()),
+            guild_id.into_inner().cast_signed(),
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+    pub async fn set_completed_bounties_channel(
+        &self,
+        guild_id: Id<GuildMarker>,
+        channel_id: Option<Id<ChannelMarker>>,
+    ) -> anyhow::Result<()> {
+        sqlx::query!(
+            "UPDATE guilds
+            SET completed_bounties_channel = $1
+            WHERE guild_id = $2",
+            channel_id.map(|id| id.into_inner().cast_signed()),
+            guild_id.into_inner().cast_signed(),
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+    pub async fn set_denied_bounties_channel(
+        &self,
+        guild_id: Id<GuildMarker>,
+        channel_id: Option<Id<ChannelMarker>>,
+    ) -> anyhow::Result<()> {
+        sqlx::query!(
+            "UPDATE guilds
+            SET denied_bounties_channel = $1
+            WHERE guild_id = $2",
+            channel_id.map(|id| id.into_inner().cast_signed()),
+            guild_id.into_inner().cast_signed(),
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]

@@ -112,6 +112,10 @@ impl EventHandler for Handler {
         if let Err(e) = match command {
             "ping" => commands::misc::ping(command_context).await,
             "bounty" => commands::bounty_management::bounty_management(command_context, args).await,
+            "config" | "communityconfig" | "community-config" | "guildconfig" | "guild-config"
+            | "serverconfig" | "server-config" | "cfg" => {
+                commands::guild_config::guild_config(command_context, args).await
+            }
             _ => Ok(()),
         } {
             tracing::error!("Error executing command `{command}`: {e}");

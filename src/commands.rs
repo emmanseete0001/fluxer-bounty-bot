@@ -18,6 +18,7 @@ use crate::{
 };
 
 pub mod bounty_management;
+pub mod guild_config;
 pub mod misc;
 
 pub struct CommandContext<'a> {
