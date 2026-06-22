@@ -96,8 +96,7 @@ impl EventHandler for Handler {
             else {
                 if let Some(bounty_submission_channel) = guild_config.bounty_submission_channel
                     && message.channel_id == bounty_submission_channel
-                {
-                    if let Err(e) = handle_submission_create(
+                    && let Err(e) = handle_submission_create(
                         &ctx,
                         &message,
                         &author_guild_member.user.load(),
@@ -106,9 +105,8 @@ impl EventHandler for Handler {
                         guild_id,
                     )
                     .await
-                    {
-                        tracing::error!("Error handling submission: {e}");
-                    }
+                {
+                    tracing::error!("Error handling submission: {e}");
                 }
                 return Ok(());
             };
