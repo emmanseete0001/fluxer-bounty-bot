@@ -51,6 +51,7 @@ pub enum GuildPermissionEntity {
 }
 
 pub struct GuildPermissionsEntry {
+    #[expect(unused)]
     pub guild_id: Id<GuildMarker>,
     pub entity: GuildPermissionEntity,
     pub allow: BotPermissions,

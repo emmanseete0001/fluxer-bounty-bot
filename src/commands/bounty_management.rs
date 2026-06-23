@@ -1,42 +1,40 @@
-use std::str::FromStr;
-
-use anyhow::Context;
 use fluxer_neptunium::{
     create_embed,
-    exts::{GuildMemberExt, MessageExt},
+    exts::{ChannelExt, MessageExt, UserExt},
     http::endpoints::channel::DeleteMessage,
-    model::guild::permissions::Permissions,
 };
 
 use crate::{
-    colors::{DEFAULT, FAILURE, SUCCESS},
+    colors::{FAILURE, SUCCESS},
     commands::CommandContext,
-    db::bounties::{BountyNum, BountyRelatedMessage, BountyState},
-    util::confirmation::{MaybeExpired, confirmation},
+    db::bounties::{BountyRelatedMessage, BountyState},
+    util::bounty_content_to_message,
 };
+
+// TODO: When replying to a message and not providing the bounty number, try to get the bounty from the replied-to message.
 
 macro_rules! get_bounty_num_from_args {
     ($ctx:expr, $args:expr, $operation:expr) => {{
         let args = $args.trim();
         if args.is_empty() {
-            $ctx.message
-                .reply(
+            fluxer_neptunium::exts::MessageExt::reply(
+                    &*$ctx.message.message,
                     $ctx.ctx,
-                    create_embed!(
+                    fluxer_neptunium::create_embed!(
                         description: format!("Provide a bounty ID to {} that bounty.", $operation),
-                        color: FAILURE,
+                        color: $crate::colors::FAILURE,
                     ),
                 )
                 .await?;
             return Ok(());
         }
-        let Ok(bounty_num) = BountyNum::from_str(args) else {
-            $ctx.message
-                .reply(
+        let Ok(bounty_num): Result<$crate::db::bounties::BountyNum, ()> = std::str::FromStr::from_str(args) else {
+            fluxer_neptunium::exts::MessageExt::reply(
+                    &*$ctx.message.message,
                     $ctx.ctx,
-                    create_embed!(
+                    fluxer_neptunium::create_embed!(
                         description: "Could not parse the bounty ID.",
-                        color: FAILURE,
+                        color: $crate::colors::FAILURE,
                     ),
                 )
                 .await?;
@@ -46,36 +44,15 @@ macro_rules! get_bounty_num_from_args {
     }};
 }
 
-pub async fn bounty_management(ctx: CommandContext<'_>, args: &'_ str) -> anyhow::Result<()> {
-    let (subcommand, args) = args.split_once(' ').unwrap_or((args, ""));
+pub async fn complete_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
+    let bounty_num = get_bounty_num_from_args!(ctx, args, "complete");
 
-    match subcommand {
-        "delete" | "remove" | "rm" | "del" => delete_bounty(ctx, args).await,
-        "approve" | "accept" => approve_bounty(ctx, args).await,
-        _ => {
-            ctx.message
-                .reply(
-                    ctx.ctx,
-                    create_embed!(
-                        description: "Unknown subcommand",
-                        color: FAILURE,
-                    ),
-                )
-                .await?;
-            Ok(())
-        }
-    }
-}
-
-async fn approve_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
-    let bounty_num = get_bounty_num_from_args!(ctx, args, "approve");
-    let bounty_data = ctx.db.get_bounty(ctx.guild_id, bounty_num).await?;
-    let Some(bounty_data) = bounty_data else {
+    let Some(bounty) = ctx.db.get_bounty(ctx.guild_id, bounty_num).await? else {
         ctx.message
             .reply(
                 ctx.ctx,
                 create_embed!(
-                    description: "Could not find that bounty.",
+                    description: "A bounty with that ID does not exist.",
                     color: FAILURE,
                 ),
             )
@@ -83,99 +60,79 @@ async fn approve_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<(
         return Ok(());
     };
 
-    match bounty_data.state {
-        BountyState::Approved => {
-            ctx.message
-                .reply(
-                    ctx.ctx,
-                    create_embed!(
-                        description: "That bounty is already approved.",
-                        color: FAILURE,
-                    ),
-                )
-                .await?;
-            return Ok(());
-        }
-        BountyState::Rejected => {
-            let message = ctx.message.reply(ctx.ctx, create_embed!(
-                description: "That bounty has been rejected. Do you want to accept it instead?",
-                color: DEFAULT,
-            )).await?;
-            let confirmation_result = confirmation(&ctx, message, ctx.guild_member.id).await?;
-            let MaybeExpired::NotExpired(true) = confirmation_result else {
-                return Ok(());
+    if bounty.state == BountyState::Approved {
+        ctx.message
+            .reply(
+                ctx.ctx,
+                create_embed!(
+                    description: "The bounty is already approved.",
+                    color: FAILURE,
+                ),
+            )
+            .await?;
+        return Ok(());
+    }
+
+    let new_related_message =
+        if let Some(completed_bounties_channel) = ctx.guild_config.completed_bounties_channel {
+            let created_by = match bounty.created_by.get_user(ctx.ctx).await {
+                Ok(created_by) => either::Either::Left(created_by.clone_inner()),
+                Err(e) => {
+                    tracing::warn!("Error fetching user {}: {e}", bounty.created_by);
+                    either::Either::Right(bounty.created_by)
+                }
             };
-        }
-        BountyState::Finished => {
-            let message = ctx.message.reply(ctx.ctx, create_embed!(
-                description: "That bounty has been marked as finished. Do you want to move it back to accepted state?",
-                color: DEFAULT,
-            )).await?;
-            let confirmation_result = confirmation(&ctx, message, ctx.guild_member.id).await?;
-            let MaybeExpired::NotExpired(true) = confirmation_result else {
-                return Ok(());
-            };
-        }
-        BountyState::Pending => {}
+            Some(
+                completed_bounties_channel
+                    .send_message(
+                        ctx.ctx,
+                        bounty_content_to_message(
+                            &bounty.content,
+                            created_by,
+                            &ctx.guild_config.bounty_submission_format,
+                            bounty.bounty_number,
+                            bounty.created_at,
+                        ),
+                    )
+                    .await?,
+            )
+        } else {
+            None
+        };
+    if let Some(related_message) = bounty.related_message
+        && let Err(e) = ctx
+            .ctx
+            .get_http_client()
+            .execute(DeleteMessage {
+                channel_id: related_message.channel_id,
+                message_id: related_message.message_id,
+            })
+            .await
+    {
+        tracing::error!("Error deleting related message: {e}");
     }
 
     ctx.db
-        .set_bounty_state(ctx.guild_id, bounty_num, BountyState::Approved)
+        .set_bounty_state_and_related_message(
+            ctx.guild_id,
+            bounty_num,
+            BountyState::Completed,
+            new_related_message.map(|msg| BountyRelatedMessage {
+                message_id: msg.id,
+                channel_id: msg.channel_id,
+            }),
+        )
         .await?;
 
     ctx.message
         .reply(
             ctx.ctx,
             create_embed!(
-                description: format!("Marked bounty `{bounty_num}` as accepted."),
+                description: format!("Completed `{bounty_num}`"),
                 color: SUCCESS,
             ),
         )
         .await?;
 
-    Ok(())
-}
-
-async fn delete_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
-    let bounty_num = get_bounty_num_from_args!(ctx, args, "delete");
-    let bounty_data = ctx
-        .db
-        .delete_and_return_bounty(ctx.guild_id, bounty_num)
-        .await
-        .with_context(|| format!("Failed to delete bounty with number {bounty_num}"))?;
-    let Some(bounty_data) = bounty_data else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "Bounty not found.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
-        return Ok(());
-    };
-    if let Some(BountyRelatedMessage {
-        channel_id,
-        message_id,
-    }) = bounty_data.related_message
-    {
-        ctx.ctx.get_http_client()
-            .execute(DeleteMessage {
-                channel_id,
-                message_id,
-            })
-            .await
-            .with_context(|| format!("Failed to delete related message of bounty {} message_id {message_id} and channel_id {channel_id}", bounty_data.bounty_id))?;
-    }
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: format!("Deleted bounty `{bounty_num}`."),
-                color: SUCCESS,
-            ),
-        )
-        .await?;
     Ok(())
 }

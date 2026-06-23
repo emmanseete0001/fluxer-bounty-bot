@@ -107,7 +107,7 @@ impl EventHandler for Handler {
                     && let Err(e) = handle_submission_create(
                         &ctx,
                         &message,
-                        &author_guild_member.user.load(),
+                        author_guild_member.user.clone_inner(),
                         &guild_config,
                         &self.db,
                         guild_id,

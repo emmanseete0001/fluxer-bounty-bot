@@ -9,7 +9,7 @@ CREATE TABLE bounties (
     created_by BIGINT NOT NULL,
     -- The content like title, description, etc., serialized and deserialized from Rust
     content JSONB NOT NULL,
-    -- "Finished", "Approved", "Pending", "Rejected"
+    -- "Completed", "Approved", "Pending", "Rejected"
     state TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     -- The "claimer" or "bounty hunter" is the person who will or has completed the implementation of the bounty

@@ -54,17 +54,20 @@ impl DbManager {
     }
 
     /// Won't take the previous state of the bounty into account.
-    pub async fn set_bounty_state(
+    pub async fn set_bounty_state_and_related_message(
         &self,
         guild_id: Id<GuildMarker>,
         bounty_number: BountyNum,
         state: BountyState,
+        related_message: Option<BountyRelatedMessage>,
     ) -> anyhow::Result<()> {
         sqlx::query!(
             "UPDATE bounties
-            SET state = $1
-            WHERE guild_id = $2 AND bounty_number = $3",
+            SET state = $1, related_message_id = $2, related_channel_id = $3
+            WHERE guild_id = $4 AND bounty_number = $5",
             state.to_string(),
+            related_message.map(|related| related.message_id.into_inner().cast_signed()),
+            related_message.map(|related| related.channel_id.into_inner().cast_signed()),
             guild_id.into_inner().cast_signed(),
             bounty_number.0,
         )
@@ -94,7 +97,7 @@ impl DbManager {
 #[derive(strum::Display, strum::EnumString, PartialEq, Eq)]
 pub enum BountyState {
     /// The bounty has been implemented (implies Approved).
-    Finished,
+    Completed,
     /// The bounty has been approved but is not implemented yet.
     Approved,
     /// The bounty is pending approval.
@@ -124,7 +127,6 @@ pub struct Bounty {
     pub related_message: Option<BountyRelatedMessage>,
 }
 
-#[expect(clippy::struct_field_names)]
 pub struct BountyCreateData {
     pub bounty_number: BountyNum,
     pub guild_id: Id<GuildMarker>,

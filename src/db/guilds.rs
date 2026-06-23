@@ -179,6 +179,7 @@ impl Default for BountySubmissionFormat {
 }
 
 pub struct GuildConfig {
+    #[expect(unused)]
     pub guild_id: Id<GuildMarker>,
     pub bounty_submission_channel: Option<Id<ChannelMarker>>,
     pub approval_queue_channel: Option<Id<ChannelMarker>>,

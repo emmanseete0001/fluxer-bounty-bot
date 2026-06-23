@@ -25,11 +25,12 @@ use crate::{
 pub async fn handle_submission_create(
     ctx: &Context,
     message: &CachedMessageCreate,
-    user: &PartialUser,
+    user: PartialUser,
     guild_config: &GuildConfig,
     db: &DbManager,
     guild_id: Id<GuildMarker>,
 ) -> anyhow::Result<()> {
+    let created_by_user_id = user.id;
     let parsed = parse_message_content_as_submission(
         &guild_config.bounty_submission_format,
         &message.content,
@@ -69,7 +70,7 @@ pub async fn handle_submission_create(
                 ctx,
                 bounty_content_to_message(
                     &parsed,
-                    user,
+                    either::Either::Left(user),
                     &guild_config.bounty_submission_format,
                     bounty_number,
                     now,
@@ -99,7 +100,7 @@ pub async fn handle_submission_create(
         content: parsed,
         guild_id,
         state: BountyState::Pending,
-        created_by: user.id,
+        created_by: created_by_user_id,
         created_at: now,
         related_message: related_message.map(|message| BountyRelatedMessage {
             message_id: message.id,

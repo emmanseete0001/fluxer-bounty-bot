@@ -16,6 +16,7 @@ use fluxer_neptunium::{
         },
     },
 };
+use rand::distr::{Alphabetic, SampleString};
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
@@ -185,9 +186,18 @@ impl CommandDispatcher {
             return Ok(());
         }
 
-        f.call(ctx, args)
-            .await
-            .with_context(|| format!("Error executing command `{command}` with args `{args}`"))?;
+        let message_backup = ctx.message;
+        let ctx_ctx_backup = ctx.ctx;
+        if let Err(e) = f.call(ctx, args).await {
+            let random_error_id = Alphabetic.sample_string(&mut rand::rng(), 16);
+            tracing::error!(
+                "[{random_error_id}] Error executing command `{command}` with args `{args}`: {e}"
+            );
+            message_backup.reply(ctx_ctx_backup, create_embed!(
+                description: format!("There was an error executing the command. `{random_error_id}`"),
+                color: FAILURE,
+            )).await.context("While replying with error code")?;
+        }
 
         Ok(())
     }
@@ -197,9 +207,9 @@ pub fn new_dispatcher_with_commands() -> CommandDispatcher {
     CommandDispatcher::new([
         (&["ping"], BotPermissions::empty(), Arc::new(misc::ping)),
         (
-            &["bounty"],
+            &["complete", "complete-bounty", "bounty-complete"],
             BotPermissions::MANAGE_BOUNTIES,
-            Arc::new(bounty_management::bounty_management),
+            Arc::new(bounty_management::complete_bounty),
         ),
         (
             &[

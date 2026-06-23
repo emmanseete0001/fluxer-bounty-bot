@@ -1,6 +1,7 @@
 use std::{collections::HashMap, iter::Peekable, str::Lines};
 
 use chrono::{DateTime, Utc};
+use either::Either;
 use enum_map::EnumMap;
 use fluxer_neptunium::{
     create_embed,
@@ -10,7 +11,7 @@ use fluxer_neptunium::{
         channel::message::embed::EmbedFooter,
         id::{
             Id,
-            marker::{ChannelMarker, GuildMarker},
+            marker::{ChannelMarker, GuildMarker, UserMarker},
         },
         user::PartialUser,
     },
@@ -107,7 +108,7 @@ pub fn parse_message_content_as_submission(
 
 pub fn bounty_content_to_message(
     content: &BountySubmissionContent,
-    created_by: &PartialUser,
+    created_by: either::Either<PartialUser, Id<UserMarker>>,
     format: &BountySubmissionFormat,
     bounty_number: BountyNum,
     created_at: DateTime<Utc>,
@@ -128,13 +129,27 @@ pub fn bounty_content_to_message(
     }
     let description = description.join("\n");
 
-    let avatar_url = if let Some(avatar) = &created_by.avatar {
-        format!("{AVATAR_URL_BASE}/{}/{avatar}.webp?size=128", created_by.id)
+    let avatar_url = if let Either::Left(created_by) = &created_by {
+        if let Some(avatar) = &created_by.avatar {
+            format!("{AVATAR_URL_BASE}/{}/{avatar}.webp?size=128", created_by.id)
+        } else {
+            format!(
+                "{STATIC_BASE}/avatars/{}.png",
+                created_by.get_default_avatar_id(),
+            )
+        }
     } else {
-        format!(
-            "{STATIC_BASE}/avatars/{}.png",
-            created_by.get_default_avatar_id()
-        )
+        format!("{STATIC_BASE}/avatars/0.png")
+    };
+
+    let author_name = match created_by {
+        Either::Left(created_by) => {
+            format!(
+                "{}#{} ({})",
+                created_by.username, created_by.discriminator, created_by.id
+            )
+        }
+        Either::Right(id) => id.to_string(),
     };
 
     let mut embed = create_embed!(
@@ -146,7 +161,7 @@ pub fn bounty_content_to_message(
         description: description,
         color: SUBMISSION_PENDING,
         author: {
-            name: format!("{}#{} ({})", created_by.username, created_by.discriminator, created_by.id),
+            name: author_name,
             icon_url: avatar_url,
         }
     );
