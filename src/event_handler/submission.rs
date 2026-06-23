@@ -96,6 +96,7 @@ pub async fn handle_submission_create(
                     BountyState::Pending,
                     None,
                     deadline_timestamp,
+                    Vec::new(),
                 ),
             )
             .await;

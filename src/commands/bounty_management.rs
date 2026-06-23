@@ -122,6 +122,7 @@ async fn set_bounty_state_common(
                         new_state,
                         bounty.assigned_to,
                         bounty.deadline,
+                        ctx.db.list_bounty_stakeholders(bounty.bounty_id).await?,
                     ),
                 )
                 .await?,

@@ -247,7 +247,7 @@ impl TryFrom<GuildConfigSchema> for GuildConfig {
 }
 
 #[derive(sqlx::FromRow)]
-pub(super) struct GuildConfigSchema {
+struct GuildConfigSchema {
     pub guild_id: i64,
     pub bounty_submission_channel: Option<i64>,
     pub approval_queue_channel: Option<i64>,

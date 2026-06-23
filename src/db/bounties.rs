@@ -188,18 +188,18 @@ impl TryFrom<BountySchema> for Bounty {
     }
 }
 
-pub struct BountySchema {
-    pub bounty_id: i64,
-    pub bounty_number: i64,
-    pub guild_id: i64,
-    pub created_by: i64,
-    pub content: serde_json::Value,
-    pub state: String,
-    pub created_at: DateTime<Utc>,
-    pub assigned_to: Option<i64>,
-    pub related_message_id: Option<i64>,
-    pub related_channel_id: Option<i64>,
-    pub deadline: Option<DateTime<Utc>>,
+struct BountySchema {
+    bounty_id: i64,
+    bounty_number: i64,
+    guild_id: i64,
+    created_by: i64,
+    content: serde_json::Value,
+    state: String,
+    created_at: DateTime<Utc>,
+    assigned_to: Option<i64>,
+    related_message_id: Option<i64>,
+    related_channel_id: Option<i64>,
+    deadline: Option<DateTime<Utc>>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]

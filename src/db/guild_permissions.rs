@@ -58,7 +58,7 @@ pub struct GuildPermissionsEntry {
     pub allow: BotPermissions,
 }
 
-pub struct GuildPermissionsEntrySchema {
+struct GuildPermissionsEntrySchema {
     pub guild_id: i64,
     pub kind: String,
     pub entity_id: i64,

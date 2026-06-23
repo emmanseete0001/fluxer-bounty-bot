@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter::Peekable, str::Lines};
+use std::{collections::HashMap, fmt::Write, iter::Peekable, str::Lines};
 
 use chrono::{DateTime, Utc};
 use either::Either;
@@ -22,6 +22,7 @@ use crate::{
     colors::SUBMISSION_PENDING,
     db::{
         bounties::{BountyNum, BountyState, BountySubmissionContent},
+        bounty_stakeholders::BountyStakeholder,
         guilds::{BountyInfoKey, BountySubmissionFormat},
     },
 };
@@ -117,6 +118,7 @@ pub fn bounty_content_to_message(
     state: BountyState,
     assigned_to: Option<Id<UserMarker>>,
     deadline: Option<DateTime<Utc>>,
+    stakeholders: Vec<BountyStakeholder>,
 ) -> MessageEmbed {
     let mut content = content.iter().collect::<Vec<_>>();
     content.sort();
@@ -146,6 +148,35 @@ pub fn bounty_content_to_message(
                 .time_string(TimestampDisplayType::ShortDateAndTime)
         );
         description.push_str(&deadline_string);
+    }
+    if !stakeholders.is_empty() {
+        description.push_str("**Bounty Amount (USD)**\n");
+        let mut total = 0.0;
+        for stakeholder in stakeholders {
+            #[expect(clippy::cast_precision_loss)]
+            let amount = stakeholder.amount as f64;
+            total += amount;
+            if let Err(e) = writeln!(
+                description,
+                "`${:.2}` by <@{}>{}",
+                amount / 100.0,
+                stakeholder.user_id,
+                if let Some(note) = stakeholder.note {
+                    format!(" - {note}")
+                } else {
+                    String::new()
+                }
+            ) {
+                tracing::warn!("Error calling writeln!(): {e}");
+            }
+        }
+        if let Err(e) = writeln!(
+            description,
+            "**Total Bounty Amount (USD)**\n`${:.2}`",
+            total / 100.0
+        ) {
+            tracing::warn!("Error calling writeln!(): {e}");
+        }
     }
 
     let avatar_url = if let Either::Left(created_by) = &created_by {

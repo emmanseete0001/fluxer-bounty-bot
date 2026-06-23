@@ -22,6 +22,7 @@ CREATE TABLE bounties (
 CREATE TABLE bounty_stakeholders (
     bounty_id BIGINT NOT NULL REFERENCES bounties (bounty_id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL,
+    -- cents
     amount INTEGER NOT NULL,
     note TEXT
 );
