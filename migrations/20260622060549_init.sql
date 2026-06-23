@@ -15,16 +15,15 @@ CREATE TABLE bounties (
     -- The "claimer" or "bounty hunter" is the person who will or has completed the implementation of the bounty
     assigned_to BIGINT,
     related_message_id BIGINT,
-    related_channel_id BIGINT
+    related_channel_id BIGINT,
+    deadline TIMESTAMPTZ
 );
 
 CREATE TABLE bounty_stakeholders (
     bounty_id BIGINT NOT NULL REFERENCES bounties (bounty_id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL,
     amount INTEGER NOT NULL,
-    note TEXT,
-    -- Can also be seen as "expiration". When this is reached, this record will be deleted because the person will no longer pay the amount
-    deadline TIMESTAMPTZ
+    note TEXT
 );
 
 CREATE TABLE guilds (

@@ -79,8 +79,8 @@ impl DbManager {
 
     pub async fn create_bounty(&self, bounty: BountyCreateData) -> anyhow::Result<()> {
         sqlx::query!(
-            "INSERT INTO bounties (bounty_number, guild_id, created_by, content, state, created_at, assigned_to, related_message_id, related_channel_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+            "INSERT INTO bounties (bounty_number, guild_id, created_by, content, state, created_at, assigned_to, related_message_id, related_channel_id, deadline)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
             bounty.bounty_number.0,
             bounty.guild_id.into_inner().cast_signed(),
             bounty.created_by.into_inner().cast_signed(),
@@ -90,6 +90,7 @@ impl DbManager {
             bounty.assigned_to.map(|id| id.into_inner().cast_signed()),
             bounty.related_message.map(|v| v.message_id.into_inner().cast_signed()),
             bounty.related_message.map(|v| v.channel_id.into_inner().cast_signed()),
+            bounty.deadline,
         ).execute(&self.pool).await?;
         Ok(())
     }
@@ -144,6 +145,7 @@ pub struct Bounty {
     pub created_at: DateTime<Utc>,
     pub assigned_to: Option<Id<UserMarker>>,
     pub related_message: Option<BountyRelatedMessage>,
+    pub deadline: Option<DateTime<Utc>>,
 }
 
 pub struct BountyCreateData {
@@ -155,6 +157,7 @@ pub struct BountyCreateData {
     pub created_at: DateTime<Utc>,
     pub assigned_to: Option<Id<UserMarker>>,
     pub related_message: Option<BountyRelatedMessage>,
+    pub deadline: Option<DateTime<Utc>>,
 }
 
 impl TryFrom<BountySchema> for Bounty {
@@ -179,6 +182,7 @@ impl TryFrom<BountySchema> for Bounty {
             } else {
                 None
             },
+            deadline: value.deadline,
         })
     }
 }
@@ -194,6 +198,7 @@ pub struct BountySchema {
     pub assigned_to: Option<i64>,
     pub related_message_id: Option<i64>,
     pub related_channel_id: Option<i64>,
+    pub deadline: Option<DateTime<Utc>>,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]

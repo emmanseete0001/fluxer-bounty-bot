@@ -42,6 +42,7 @@ bitflags! {
         const CREATE_BOUNTIES = 1 << 0;
         const MANAGE_BOUNTIES = 1 << 1;
         const MANAGE_GUILD_CONFIG = 1 << 2;
+        const BOUNTY_HUNTER = 1 << 3;
     }
 }
 

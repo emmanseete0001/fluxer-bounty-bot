@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use fluxer_neptunium::{
     cached_payload::CachedMessageCreate,
     create_embed,
@@ -8,6 +8,7 @@ use fluxer_neptunium::{
     exts::{ChannelExt, MessageExt},
     model::{
         id::{Id, marker::GuildMarker},
+        time::timestamp::{Timestamp, representations::Iso8601},
         user::PartialUser,
     },
 };
@@ -17,7 +18,7 @@ use crate::{
     db::{
         DbManager,
         bounties::{BountyCreateData, BountyRelatedMessage, BountyState},
-        guilds::GuildConfig,
+        guilds::{BountyInfoKey, GuildConfig},
     },
     util::{bounty_content_to_message, parse_message_content_as_submission},
 };
@@ -61,6 +62,23 @@ pub async fn handle_submission_create(
         reply_result?;
         return Ok(());
     }
+    let deadline_timestamp = if let Some(timestamp_from_parsed) =
+        parsed.get(&BountyInfoKey::Deadline)
+    {
+        let Some(timestamp) = Timestamp::<Iso8601>::parse(timestamp_from_parsed.trim()) else {
+            let reply_result = message.reply(ctx, create_embed!(
+                description: format!("The timestamp provided in the due date could not be parsed. Make sure to format it in the Fluxer timestamp format."),
+                color: FAILURE,
+            )).await;
+            tokio::time::sleep(Duration::from_secs(10)).await;
+            message.delete(ctx).await?;
+            reply_result?;
+            return Ok(());
+        };
+        Some(DateTime::from(timestamp))
+    } else {
+        None
+    };
     let bounty_number = db.get_next_bounty_number_upsert(guild_id).await?;
     let now = Utc::now();
     let related_message = if let Some(approval_queue_channel) = guild_config.approval_queue_channel
@@ -75,6 +93,8 @@ pub async fn handle_submission_create(
                     bounty_number,
                     now,
                     BountyState::Pending,
+                    None,
+                    deadline_timestamp,
                 ),
             )
             .await;
@@ -107,6 +127,7 @@ pub async fn handle_submission_create(
             message_id: message.id,
             channel_id: message.channel_id,
         }),
+        deadline: deadline_timestamp,
     };
     db.create_bounty(bounty).await?;
     let message_send_result = message

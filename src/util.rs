@@ -6,13 +6,13 @@ use enum_map::EnumMap;
 use fluxer_neptunium::{
     create_embed,
     exts::UserExt,
-    http::endpoints::channel::CreateMessageBody,
     model::{
-        channel::message::embed::EmbedFooter,
+        channel::message::embed::{EmbedFooter, MessageEmbed},
         id::{
             Id,
             marker::{ChannelMarker, GuildMarker, UserMarker},
         },
+        time::timestamp::{Timestamp, TimestampDisplayType, representations::Iso8601},
         user::PartialUser,
     },
 };
@@ -114,7 +114,9 @@ pub fn bounty_content_to_message(
     bounty_number: BountyNum,
     created_at: DateTime<Utc>,
     state: BountyState,
-) -> impl Into<CreateMessageBody> {
+    assigned_to: Option<Id<UserMarker>>,
+    deadline: Option<DateTime<Utc>>,
+) -> MessageEmbed {
     let mut content = content.iter().collect::<Vec<_>>();
     content.sort();
     let mut description = Vec::new();
@@ -129,7 +131,21 @@ pub fn bounty_content_to_message(
             .map_or("*no titles for key*", String::as_str);
         description.push(format!("## {key_title}\n{value}"));
     }
-    let description = description.join("\n");
+    let mut description = description.join("\n");
+    description.push_str("\n===\n");
+    if let Some(assigned_to) = assigned_to {
+        let assigned_to_string = format!("**Assigned to**\n<@{assigned_to}>\n");
+        description.push_str(&assigned_to_string);
+    }
+    if let Some(deadline) = deadline {
+        // Maybe take the description from `content` instead? Seems super unnecessary though since it probably wouldn't change anyway in 99% of cases
+        let deadline_string = format!(
+            "**Due date**\n{}\n",
+            Timestamp::<Iso8601>::from(deadline)
+                .time_string(TimestampDisplayType::ShortDateAndTime)
+        );
+        description.push_str(&deadline_string);
+    }
 
     let avatar_url = if let Either::Left(created_by) = &created_by {
         if let Some(avatar) = &created_by.avatar {

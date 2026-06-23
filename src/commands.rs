@@ -249,6 +249,11 @@ pub fn new_dispatcher_with_commands() -> CommandDispatcher {
             Arc::new(bounty_management::assign_to_bounty),
         ),
         (
+            &["self-assign", "selfassign"],
+            BotPermissions::BOUNTY_HUNTER,
+            Arc::new(bounty_management::self_assign_to_bounty),
+        ),
+        (
             &[
                 "config",
                 "communityconfig",

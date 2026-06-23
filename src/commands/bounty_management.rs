@@ -120,6 +120,8 @@ async fn set_bounty_state_common(
                         bounty.bounty_number,
                         bounty.created_at,
                         new_state,
+                        bounty.assigned_to,
+                        bounty.deadline,
                     ),
                 )
                 .await?,
@@ -261,6 +263,40 @@ pub async fn assign_to_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Re
             ctx.ctx,
             create_embed!(
                 description: format!("Assigned <@{user_id}> to the bounty `{bounty_num}`."),
+                color: SUCCESS,
+            ),
+        )
+        .await?;
+
+    Ok(())
+}
+
+pub async fn self_assign_to_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
+    let (bounty_num, _rest) = get_bounty_num_from_args!(ctx, args, "assign");
+    let user_id = ctx.guild_member.id;
+
+    let query_result = ctx
+        .db
+        .assign_user_to_bounty(ctx.guild_id, bounty_num, Some(user_id))
+        .await?;
+    if query_result.rows_affected() == 0 {
+        ctx.message
+            .reply(
+                ctx.ctx,
+                create_embed!(
+                    description: "A bounty with that ID does not exist.",
+                    color: FAILURE,
+                ),
+            )
+            .await?;
+        return Ok(());
+    }
+
+    ctx.message
+        .reply(
+            ctx.ctx,
+            create_embed!(
+                description: format!("Assigned yourself to the bounty `{bounty_num}`."),
                 color: SUCCESS,
             ),
         )
