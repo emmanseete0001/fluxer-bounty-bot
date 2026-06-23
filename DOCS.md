@@ -78,3 +78,4 @@ Permissions are specified for each command.
 * Setting the command prefix
 * Managing permissions (linked to roles or users)
 * Editing bounties
+* Fix duplicate due date
