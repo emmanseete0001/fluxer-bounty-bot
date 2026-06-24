@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE bounties\n            SET content = $1\n            WHERE bounty_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Jsonb",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "38cdf0dccff9090c9dba95eef782ac3b8b9e3b149319d3ca88b676148b863b76"
+}

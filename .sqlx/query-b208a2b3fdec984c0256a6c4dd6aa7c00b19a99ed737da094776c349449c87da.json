@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE bounties\n            SET deadline = $1\n            WHERE bounty_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b208a2b3fdec984c0256a6c4dd6aa7c00b19a99ed737da094776c349449c87da"
+}

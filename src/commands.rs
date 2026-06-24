@@ -205,6 +205,7 @@ impl CommandDispatcher {
     }
 }
 
+#[expect(clippy::too_many_lines)]
 pub fn new_dispatcher_with_commands() -> CommandDispatcher {
     CommandDispatcher::new([
         (&["ping"], BotPermissions::empty(), Arc::new(misc::ping)),

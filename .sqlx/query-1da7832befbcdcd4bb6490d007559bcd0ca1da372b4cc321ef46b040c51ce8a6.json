@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO guilds (guild_id, bounty_submission_format)\n            VALUES ($1, $2)\n            ON CONFLICT (guild_id) DO UPDATE\n            SET current_bounty_number = guilds.current_bounty_number + 1\n            RETURNING current_bounty_number",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "current_bounty_number",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "current_bounty_number"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1da7832befbcdcd4bb6490d007559bcd0ca1da372b4cc321ef46b040c51ce8a6"
+}

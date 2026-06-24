@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO bounty_stakeholders (bounty_id, user_id, amount, note)\n            VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9979126cb6a4602c72d190641e211ef64d0351b2785b934c78157d27d58ea119"
+}

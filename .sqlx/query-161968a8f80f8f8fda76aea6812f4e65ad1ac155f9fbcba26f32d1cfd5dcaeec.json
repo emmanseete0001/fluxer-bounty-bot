@@ -1,0 +1,149 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM bounties\n            WHERE guild_id = $1 AND bounty_number = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "bounty_id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "bounty_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "bounty_number",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "bounty_number"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "guild_id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "guild_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "created_by",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "created_by"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "content",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "state",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "assigned_to",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "assigned_to"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "related_message_id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "related_message_id"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "related_channel_id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "related_channel_id"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deadline",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "bounties",
+            "name": "deadline"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "161968a8f80f8f8fda76aea6812f4e65ad1ac155f9fbcba26f32d1cfd5dcaeec"
+}

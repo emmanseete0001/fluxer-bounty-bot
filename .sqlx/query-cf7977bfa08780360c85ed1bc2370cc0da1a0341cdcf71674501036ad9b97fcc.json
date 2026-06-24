@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM guild_permissions\n            WHERE allow = 0",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "cf7977bfa08780360c85ed1bc2370cc0da1a0341cdcf71674501036ad9b97fcc"
+}

@@ -1,0 +1,149 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO guilds (guild_id, bounty_submission_format)\n            VALUES ($1, $2)\n            ON CONFLICT (guild_id) DO UPDATE\n            SET guild_id = EXCLUDED.guild_id\n            RETURNING *",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "guild_id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "guild_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "bounty_submission_channel",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "bounty_submission_channel"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "approval_queue_channel",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "approval_queue_channel"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "approved_bounties_channel",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "approved_bounties_channel"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "claimed_bounties_channel",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "claimed_bounties_channel"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "completed_bounties_channel",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "completed_bounties_channel"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "rejected_bounties_channel",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "rejected_bounties_channel"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "command_prefix",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "command_prefix"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "bounty_submission_format",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "bounty_submission_format"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "command_channels",
+        "type_info": "Int8Array",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "command_channels"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "current_bounty_number",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "guilds",
+            "name": "current_bounty_number"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "82bb9c34730cd10b4a1091c6e5346fae0dd8d20780396209ae969655633b6959"
+}

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO guild_permissions (guild_id, kind, entity_id, allow)\n            VALUES ($1, 'Role', $2, $3)\n            ON CONFLICT (guild_id, entity_id) DO UPDATE\n            SET allow = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "664a6a927a256da52af58f9cad8dfecb32aaecba89c6581232fb5a434e291634"
+}

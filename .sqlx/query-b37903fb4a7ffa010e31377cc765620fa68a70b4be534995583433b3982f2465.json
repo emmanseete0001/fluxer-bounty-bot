@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE guilds\n            SET approved_bounties_channel = $1\n            WHERE guild_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b37903fb4a7ffa010e31377cc765620fa68a70b4be534995583433b3982f2465"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE guilds\n            SET approval_queue_channel = $1\n            WHERE guild_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "701d8b21a34e0484f4c510400271ed3a20930f95d0b94b5f0f7affb02a4ff022"
+}
