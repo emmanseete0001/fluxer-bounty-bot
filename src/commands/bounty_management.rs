@@ -2,7 +2,7 @@ use anyhow::Context as _;
 use fluxer_neptunium::{
     create_embed,
     exts::{ChannelExt, MessageExt, UserExt},
-    http::endpoints::channel::DeleteMessage,
+    http::endpoints::channel::{DeleteMessage, EditMessage},
     model::id::{Id, marker::ChannelMarker},
 };
 
@@ -210,12 +210,8 @@ pub async fn assign_to_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Re
             .await?;
         return Ok(());
     };
-
-    let query_result = ctx
-        .db
-        .assign_user_to_bounty(ctx.guild_id, bounty_num, Some(user_id))
-        .await?;
-    if query_result.rows_affected() == 0 {
+    let bounty = ctx.db.get_bounty(ctx.guild_id, bounty_num).await?;
+    let Some(bounty) = bounty else {
         ctx.message
             .reply(
                 ctx.ctx,
@@ -226,6 +222,38 @@ pub async fn assign_to_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Re
             )
             .await?;
         return Ok(());
+    };
+
+    ctx.db
+        .assign_user_to_bounty(ctx.guild_id, bounty_num, Some(user_id))
+        .await?;
+    if let Some(related_message) = bounty.related_message {
+        let created_by = match bounty.created_by.get_user(ctx.ctx).await {
+            Ok(created_by) => either::Either::Left(created_by.clone_inner()),
+            Err(e) => {
+                tracing::warn!("Error fetching user {}: {e}", bounty.created_by);
+                either::Either::Right(bounty.created_by)
+            }
+        };
+        let embed = bounty_content_to_message(
+            &bounty.content,
+            created_by,
+            &ctx.guild_config.bounty_submission_format,
+            bounty_num,
+            bounty.created_at,
+            bounty.state,
+            Some(user_id),
+            bounty.deadline,
+            ctx.db.list_bounty_stakeholders(bounty.bounty_id).await?,
+        );
+        ctx.ctx
+            .get_http_client()
+            .execute(EditMessage {
+                message_id: related_message.message_id,
+                channel_id: related_message.channel_id,
+                body: embed.into(),
+            })
+            .await?;
     }
 
     ctx.message
@@ -278,21 +306,36 @@ pub async fn self_assign_to_bounty(ctx: CommandContext<'_>, args: &str) -> anyho
         return Ok(());
     }
 
-    let query_result = ctx
-        .db
+    ctx.db
         .assign_user_to_bounty(ctx.guild_id, bounty_num, Some(user_id))
         .await?;
-    if query_result.rows_affected() == 0 {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "A bounty with that ID does not exist.",
-                    color: FAILURE,
-                ),
-            )
+    if let Some(related_message) = bounty.related_message {
+        let created_by = match bounty.created_by.get_user(ctx.ctx).await {
+            Ok(created_by) => either::Either::Left(created_by.clone_inner()),
+            Err(e) => {
+                tracing::warn!("Error fetching user {}: {e}", bounty.created_by);
+                either::Either::Right(bounty.created_by)
+            }
+        };
+        let embed = bounty_content_to_message(
+            &bounty.content,
+            created_by,
+            &ctx.guild_config.bounty_submission_format,
+            bounty_num,
+            bounty.created_at,
+            bounty.state,
+            Some(user_id),
+            bounty.deadline,
+            ctx.db.list_bounty_stakeholders(bounty.bounty_id).await?,
+        );
+        ctx.ctx
+            .get_http_client()
+            .execute(EditMessage {
+                message_id: related_message.message_id,
+                channel_id: related_message.channel_id,
+                body: embed.into(),
+            })
             .await?;
-        return Ok(());
     }
 
     ctx.message
@@ -305,5 +348,150 @@ pub async fn self_assign_to_bounty(ctx: CommandContext<'_>, args: &str) -> anyho
         )
         .await?;
 
+    Ok(())
+}
+
+pub async fn unassign_from_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
+    let (bounty_num, _rest) = get_bounty_num_from_args!(ctx, args, "assign");
+
+    let bounty = ctx.db.get_bounty(ctx.guild_id, bounty_num).await?;
+    let Some(bounty) = bounty else {
+        ctx.message
+            .reply(
+                ctx.ctx,
+                create_embed!(
+                    description: "A bounty with that ID does not exist.",
+                    color: FAILURE,
+                ),
+            )
+            .await?;
+        return Ok(());
+    };
+    let Some(user_id) = bounty.assigned_to else {
+        ctx.message
+            .reply(
+                ctx.ctx,
+                create_embed!(
+                    description: "No one is assigned to that bounty.",
+                    color: FAILURE,
+                ),
+            )
+            .await?;
+        return Ok(());
+    };
+
+    ctx.db
+        .assign_user_to_bounty(ctx.guild_id, bounty_num, None)
+        .await?;
+    if let Some(related_message) = bounty.related_message {
+        let created_by = match bounty.created_by.get_user(ctx.ctx).await {
+            Ok(created_by) => either::Either::Left(created_by.clone_inner()),
+            Err(e) => {
+                tracing::warn!("Error fetching user {}: {e}", bounty.created_by);
+                either::Either::Right(bounty.created_by)
+            }
+        };
+        let embed = bounty_content_to_message(
+            &bounty.content,
+            created_by,
+            &ctx.guild_config.bounty_submission_format,
+            bounty_num,
+            bounty.created_at,
+            bounty.state,
+            None,
+            bounty.deadline,
+            ctx.db.list_bounty_stakeholders(bounty.bounty_id).await?,
+        );
+        ctx.ctx
+            .get_http_client()
+            .execute(EditMessage {
+                message_id: related_message.message_id,
+                channel_id: related_message.channel_id,
+                body: embed.into(),
+            })
+            .await?;
+    }
+
+    ctx.message
+        .reply(
+            ctx.ctx,
+            create_embed!(
+                description: format!("Unassigned <@{user_id}> from the bounty `{bounty_num}`."),
+                color: SUCCESS,
+            ),
+        )
+        .await?;
+
+    Ok(())
+}
+
+pub async fn self_unassign_from_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
+    let (bounty_num, _rest) = get_bounty_num_from_args!(ctx, args, "unassign");
+
+    let bounty = ctx.db.get_bounty(ctx.guild_id, bounty_num).await?;
+    let Some(bounty) = bounty else {
+        ctx.message
+            .reply(
+                ctx.ctx,
+                create_embed!(
+                    description: "A bounty with that ID does not exist.",
+                    color: FAILURE,
+                ),
+            )
+            .await?;
+        return Ok(());
+    };
+    if bounty.assigned_to != Some(ctx.guild_member.id) {
+        ctx.message
+            .reply(
+                ctx.ctx,
+                create_embed!(
+                    description: "You are not assigned to that bounty.",
+                    color: FAILURE,
+                ),
+            )
+            .await?;
+        return Ok(());
+    }
+    ctx.db
+        .assign_user_to_bounty(ctx.guild_id, bounty_num, None)
+        .await?;
+    if let Some(related_message) = bounty.related_message {
+        let created_by = match bounty.created_by.get_user(ctx.ctx).await {
+            Ok(created_by) => either::Either::Left(created_by.clone_inner()),
+            Err(e) => {
+                tracing::warn!("Error fetching user {}: {e}", bounty.created_by);
+                either::Either::Right(bounty.created_by)
+            }
+        };
+        let embed = bounty_content_to_message(
+            &bounty.content,
+            created_by,
+            &ctx.guild_config.bounty_submission_format,
+            bounty_num,
+            bounty.created_at,
+            bounty.state,
+            None,
+            bounty.deadline,
+            ctx.db.list_bounty_stakeholders(bounty.bounty_id).await?,
+        );
+        ctx.ctx
+            .get_http_client()
+            .execute(EditMessage {
+                message_id: related_message.message_id,
+                channel_id: related_message.channel_id,
+                body: embed.into(),
+            })
+            .await?;
+    }
+    ctx.message
+        .reply(
+            ctx.ctx,
+            create_embed!(
+                description: format!("Unassigned you from `{bounty_num}`."),
+                color: SUCCESS,
+            ),
+        )
+        .await?;
     Ok(())
 }

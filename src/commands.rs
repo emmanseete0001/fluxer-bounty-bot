@@ -284,5 +284,20 @@ pub fn new_dispatcher_with_commands() -> CommandDispatcher {
             BotPermissions::MANAGE_BOUNTIES,
             Arc::new(bounty_stakeholders::bounty_stakeholder),
         ),
+        (
+            &["self-unassign", "selfunassign"],
+            BotPermissions::BOUNTY_HUNTER,
+            Arc::new(bounty_management::self_unassign_from_bounty),
+        ),
+        (
+            &[
+                "unassign",
+                "unassign-from",
+                "unassign-from-bounty",
+                "bounty-unassign",
+            ],
+            BotPermissions::MANAGE_BOUNTIES,
+            Arc::new(bounty_management::unassign_from_bounty),
+        ),
     ])
 }
