@@ -51,3 +51,5 @@ CREATE TABLE guild_permissions (
     -- Notably *not* the fluxer permissions, but rather the bounty bot permissions
     allow BIGINT NOT NULL
 );
+
+CREATE UNIQUE INDEX idx_guild_permissions_by_guild_id_and_entity_id ON guild_permissions (guild_id, entity_id);

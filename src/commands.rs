@@ -35,6 +35,7 @@ pub mod bounty_management;
 pub mod bounty_stakeholders;
 pub mod guild_config;
 pub mod misc;
+pub mod permission_management;
 
 pub struct CommandContext<'a> {
     pub ctx: &'a Context,
@@ -303,6 +304,21 @@ pub fn new_dispatcher_with_commands() -> CommandDispatcher {
             &["edit", "edit-bounty"],
             BotPermissions::MANAGE_BOUNTIES,
             Arc::new(bounty_management::edit_bounty),
+        ),
+        (
+            &["add-permission"],
+            BotPermissions::MANAGE_GUILD_CONFIG,
+            Arc::new(permission_management::add_permission_to),
+        ),
+        (
+            &["remove-permission", "rm-permission"],
+            BotPermissions::MANAGE_GUILD_CONFIG,
+            Arc::new(permission_management::remove_permission_from),
+        ),
+        (
+            &["permissions", "perms", "list-perms", "list-permissions"],
+            BotPermissions::MANAGE_GUILD_CONFIG,
+            Arc::new(permission_management::list_permissions),
         ),
     ])
 }

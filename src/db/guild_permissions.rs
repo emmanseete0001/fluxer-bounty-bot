@@ -34,6 +34,33 @@ impl DbManager {
             .insert(guild_id, Arc::clone(&permissions));
         Ok(permissions)
     }
+
+    pub async fn set_guild_permissions(
+        &self,
+        guild_id: Id<GuildMarker>,
+        role_id: Id<RoleMarker>,
+        permissions: BotPermissions,
+    ) -> anyhow::Result<()> {
+        sqlx::query!(
+            "INSERT INTO guild_permissions (guild_id, kind, entity_id, allow)
+            VALUES ($1, 'Role', $2, $3)
+            ON CONFLICT (guild_id, entity_id) DO UPDATE
+            SET allow = $3",
+            guild_id.into_inner().cast_signed(),
+            role_id.into_inner().cast_signed(),
+            permissions.bits().cast_signed(),
+        )
+        .execute(&self.pool)
+        .await?;
+        self.cached_guild_permissions.invalidate(&guild_id);
+        sqlx::query!(
+            "DELETE FROM guild_permissions
+            WHERE allow = 0",
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
 }
 
 bitflags! {
@@ -46,6 +73,7 @@ bitflags! {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub enum GuildPermissionEntity {
     User(Id<UserMarker>),
     Role(Id<RoleMarker>),
