@@ -8,19 +8,16 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy manifests first for better layer caching
-COPY Cargo.toml Cargo.lock ./
+# # Copy manifests first for better layer caching
+# COPY Cargo.toml Cargo.lock ./
+# 
+# # Copy the real source + the offline query cache
+# COPY src ./src
+# COPY .sqlx ./.sqlx
+# COPY .env ./.env
 
-# Pre-fetch dependencies (dummy src so cargo can resolve)
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release || true
-RUN rm -rf src
-RUN rm -f target/release/bounty-bot target/release/deps/bounty-bot-*
-
-# Copy the real source + the offline query cache
-COPY src ./src
-COPY .sqlx ./.sqlx
-COPY .env ./.env
+# put the fries in the bag
+COPY . .
 
 # SQLX_OFFLINE=true skips the live DB connection during compilation
 ENV SQLX_OFFLINE=true
