@@ -15,6 +15,7 @@ COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs
 RUN cargo build --release || true
 RUN rm -rf src
+RUN rm -f target/release/bounty-bot target/release/deps/bounty-bot-*
 
 # Copy the real source + the offline query cache
 COPY src ./src
