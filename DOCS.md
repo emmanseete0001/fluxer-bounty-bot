@@ -62,12 +62,12 @@ The following is a complete command reference. Command syntax follows the [Minec
 > Requires **Administrator** permission. Or `MANAGE_GUILD_CONFIG` permission.
 
 | Command Syntax                                           | Description                                                                                                                    |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
 | `config`                                                 | Display the current community configuration.                                                                                   |
 | `config bounty-submission-channel [<channel> \| reset]`  | Set or reset the channel where bounty creators submit new bounties.                                                            |
 | `config approval-queue-channel [<channel> \| reset]`     | Set or reset the approval queue channel where submitted bounties await review.                                                 |
 | `config approved-bounties-channel [<channel> \| reset]`  | Set or reset the channel where approved bounties are displayed.                                                                |
-| `config assigned-bounties-channel [<channel> \| reset]`  | Set or reset the channel where assigned bounties are displayed.                                                                |
+| `config (claimed-bounties-channel                        | assigned-bounties-channel) [<channel> \| reset]`                                                                               | Set or reset the channel where assigned bounties are displayed. |
 | `config completed-bounties-channel [<channel> \| reset]` | Set or reset the channel where completed bounties are archived.                                                                |
 | `config rejected-bounties-channel [<channel> \| reset]`  | Set or reset the channel where rejected bounties are archived.                                                                 |
 | `config prefix <new_prefix>`                             | Set the command prefix (default: `b!`). Independent of the current prefix, you can always run commands by @mentioning the bot. |

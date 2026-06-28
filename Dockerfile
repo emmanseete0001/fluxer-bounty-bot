@@ -24,7 +24,7 @@ ENV SQLX_OFFLINE=true
 
 RUN cargo build --release
 
-FROM debian:bookworm-slim AS runtime
+FROM debian:trixie-slim AS runtime
 
 WORKDIR /app
 
