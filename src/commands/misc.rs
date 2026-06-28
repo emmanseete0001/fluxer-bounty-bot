@@ -9,6 +9,7 @@ pub async fn ping(ctx: CommandContext<'_>, _args: &str) -> anyhow::Result<()> {
         let created_at: DateTime<Utc> = ctx.message.timestamp.into();
         now.signed_duration_since(created_at)
     };
+    // Using the normal reply for this one to not delete it after 5 seconds.
     ctx.message
         .reply(
             ctx.ctx,

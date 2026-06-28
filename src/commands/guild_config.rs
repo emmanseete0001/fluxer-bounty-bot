@@ -1,6 +1,6 @@
 use fluxer_neptunium::{
     create_embed,
-    exts::{GuildExt, GuildMemberExt, MessageExt},
+    exts::{GuildExt, GuildMemberExt},
     model::{
         guild::permissions::Permissions,
         id::{
@@ -24,10 +24,11 @@ pub async fn guild_config(ctx: CommandContext<'_>, args: &str) -> anyhow::Result
         .has_permissions(ctx.ctx, Permissions::MANAGE_GUILD)
         .await?
     {
-        ctx.message.reply(ctx.ctx, create_embed!(
+        ctx.reply(create_embed!(
             description: "You need \"Manage Community\" permissions to execute this command.",
             color: FAILURE,
-        )).await?;
+        ))
+        .await?;
         return Ok(());
     }
 
@@ -89,48 +90,61 @@ pub async fn guild_config(ctx: CommandContext<'_>, args: &str) -> anyhow::Result
             .await
         }
         "command-prefix" | "prefix" => set_command_prefix(ctx, args).await,
+        "delete-commands" => set_delete_commands(ctx, args).await,
         "" => reply_with_guild_config(ctx).await,
         _ => {
-            ctx.message
-                .reply(
-                    ctx.ctx,
-                    create_embed!(
-                        description: "Unknown subcommand",
-                        color: FAILURE,
-                    ),
-                )
-                .await?;
+            ctx.reply(create_embed!(
+                description: "Unknown subcommand",
+                color: FAILURE,
+            ))
+            .await?;
             Ok(())
         }
     }
 }
 
+async fn set_delete_commands(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
+    let delete_commands = match args.trim() {
+        "true" | "yes" => true,
+        "false" | "no" => false,
+        _ => {
+            ctx.reply(create_embed!(
+                description: "Valid values are `true`, `yes`, `false` and `no`.",
+                color: FAILURE,
+            ))
+            .await?;
+            return Ok(());
+        }
+    };
+    ctx.db
+        .set_delete_commands_upsert(ctx.guild_id, delete_commands)
+        .await?;
+    ctx.reply(create_embed!(
+        description: format!("Configuration updated, \"delete commands\" is now {delete_commands}"),
+        color: SUCCESS,
+    ))
+    .await?;
+    Ok(())
+}
+
 async fn set_command_prefix(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
     let prefix = args.trim();
     if prefix.is_empty() {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "Provide a command prefix.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "Provide a command prefix.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     }
     ctx.db
         .set_guild_command_prefix_upsert(ctx.guild_id, prefix)
         .await?;
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: format!("The command prefix is now `{prefix}`."),
-                color: SUCCESS,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: format!("The command prefix is now `{prefix}`."),
+        color: SUCCESS,
+    ))
+    .await?;
     Ok(())
 }
 
@@ -151,15 +165,11 @@ where
         } else if let Some((_, channel_id)) = parse_channel_mention_or_id_or_link(args) {
             Some(channel_id)
         } else {
-            ctx.message
-                .reply(
-                    ctx.ctx,
-                    fluxer_neptunium::create_embed!(
-                        description: "Could not parse the channel.",
-                        color: FAILURE,
-                    ),
-                )
-                .await?;
+            ctx.reply(create_embed!(
+                description: "Could not parse the channel.",
+                color: FAILURE,
+            ))
+            .await?;
             return Ok(());
         }
     };
@@ -170,7 +180,7 @@ where
             .find(|channel| channel.id == channel_id)
             .is_none()
         {
-            ctx.message.reply(ctx.ctx, create_embed!(
+            ctx.reply(create_embed!(
                 description: "That channel does not exist in this community or I don't have access to it.",
                 color: FAILURE,
             )).await?;
@@ -180,19 +190,15 @@ where
 
     f(ctx.db, ctx.guild_id, channel_id).await?;
 
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: if let Some(channel_id) = channel_id {
-                    format!("Set the {channel_name} channel to <#{channel_id}>.")
-                } else {
-                    format!("Unset the {channel_name} channel.")
-                },
-                color: SUCCESS,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: if let Some(channel_id) = channel_id {
+            format!("Set the {channel_name} channel to <#{channel_id}>.")
+        } else {
+            format!("Unset the {channel_name} channel.")
+        },
+        color: SUCCESS,
+    ))
+    .await?;
     Ok(())
 }
 
@@ -217,15 +223,11 @@ async fn reply_with_guild_config(ctx: CommandContext<'_>) -> anyhow::Result<()> 
             .rejected_bounties_channel
             .map_or_else(|| "*none*".to_owned(), |id| format!("<#{id}>")),
     );
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                title: "Bot configuration",
-                description: config_string,
-                color: DEFAULT,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        title: "Bot configuration",
+        description: config_string,
+        color: DEFAULT,
+    ))
+    .await?;
     Ok(())
 }

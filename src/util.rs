@@ -35,9 +35,7 @@ macro_rules! get_bounty_num_from_args {
         let args = $args.trim();
         let (num, rest) = args.split_once(' ').unwrap_or((args, ""));
         if num.is_empty() {
-            fluxer_neptunium::exts::MessageExt::reply(
-                    &*$ctx.message.message,
-                    $ctx.ctx,
+            $ctx.reply(
                     fluxer_neptunium::create_embed!(
                         description: format!("Provide a bounty ID to {} that bounty.", $operation),
                         color: $crate::colors::FAILURE,
@@ -47,9 +45,7 @@ macro_rules! get_bounty_num_from_args {
             return Ok(());
         }
         let Ok(bounty_num): Result<$crate::db::bounties::BountyNum, ()> = std::str::FromStr::from_str(num) else {
-            fluxer_neptunium::exts::MessageExt::reply(
-                    &*$ctx.message.message,
-                    $ctx.ctx,
+            $ctx.reply(
                     fluxer_neptunium::create_embed!(
                         description: "Could not parse the bounty ID.",
                         color: $crate::colors::FAILURE,

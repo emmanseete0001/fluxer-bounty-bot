@@ -16,15 +16,11 @@ use crate::{
 pub async fn add_permission_to(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
     let (role_id, permission_str) = args.split_once(' ').unwrap_or((args, ""));
     let Some(role_id) = parse_role_id_or_mention(role_id, ctx.guild_id) else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "Could not parse the role ID or role mention.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "Could not parse the role ID or role mention.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     let Some(permission) = parse_permission_str(permission_str.trim()) else {
@@ -54,15 +50,11 @@ pub async fn add_permission_to(ctx: CommandContext<'_>, args: &str) -> anyhow::R
         .set_guild_permissions(ctx.guild_id, role_id, permission)
         .await?;
 
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: format!("Permissions for <@&{role_id}> updated."),
-                color: SUCCESS,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: format!("Permissions for <@&{role_id}> updated."),
+        color: SUCCESS,
+    ))
+    .await?;
 
     Ok(())
 }
@@ -84,44 +76,32 @@ pub async fn list_permissions(ctx: CommandContext<'_>, _args: &str) -> anyhow::R
         })
         .collect::<Vec<String>>()
         .join("\n");
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: if permissions_string.is_empty() {
-                    "*none*".to_owned()
-                } else { permissions_string },
-                color: DEFAULT,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: if permissions_string.is_empty() {
+            "*none*".to_owned()
+        } else { permissions_string },
+        color: DEFAULT,
+    ))
+    .await?;
     Ok(())
 }
 
 pub async fn remove_permission_from(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
     let (role_id, permission_str) = args.split_once(' ').unwrap_or((args, ""));
     let Some(role_id) = parse_role_id_or_mention(role_id, ctx.guild_id) else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "Could not parse the role ID or role mention.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "Could not parse the role ID or role mention.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     let Some(permission) = parse_permission_str(permission_str.trim()) else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "Could not parse the permission string.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "Could not parse the permission string.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
 
@@ -139,15 +119,11 @@ pub async fn remove_permission_from(ctx: CommandContext<'_>, args: &str) -> anyh
         .set_guild_permissions(ctx.guild_id, role_id, permission)
         .await?;
 
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: format!("Permissions for <@&{role_id}> updated."),
-                color: SUCCESS,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: format!("Permissions for <@&{role_id}> updated."),
+        color: SUCCESS,
+    ))
+    .await?;
 
     Ok(())
 }

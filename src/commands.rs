@@ -8,6 +8,7 @@ use fluxer_neptunium::{
     create_embed,
     events::context::Context,
     exts::{GuildMemberExt, MessageExt},
+    http::endpoints::channel::CreateMessageBody,
     model::{
         guild::permissions::Permissions,
         id::{
@@ -118,6 +119,25 @@ impl CommandContext<'_> {
         }
         Ok(self.my_permissions().await?.contains(permissions))
     }
+
+    /// Reply to the original message, deleting the message and reply after 5 seconds if the guild config has this configured.
+    pub async fn reply(&self, body: impl Into<CreateMessageBody> + Send) -> anyhow::Result<()> {
+        let reply = self.message.reply(self.ctx, body).await?;
+        if self.guild_config.delete_commands {
+            let message = self.message.load();
+            let ctx = self.ctx.clone();
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(5)).await;
+                if let Err(e) = message.delete(&ctx).await {
+                    tracing::error!("Error deleting message {}: {e}", message.id);
+                }
+                if let Err(e) = reply.delete(&ctx).await {
+                    tracing::error!("Error deleting reply {}: {e}", reply.id);
+                }
+            });
+        }
+        Ok(())
+    }
 }
 
 pub trait CommandExecuteFn<'a>: Send + Sync + 'static {
@@ -179,12 +199,11 @@ impl CommandDispatcher {
             return Ok(());
         };
         if !ctx.has_permissions(*required_permissions).await? {
-            let message = ctx.message.reply(ctx.ctx, create_embed!(
+            ctx.reply(create_embed!(
                 description: "You do not have the required permissions to perform this command.",
                 color: FAILURE,
-            )).await?;
-            tokio::time::sleep(Duration::from_secs(5)).await;
-            message.delete(ctx.ctx).await?;
+            ))
+            .await?;
             return Ok(());
         }
 

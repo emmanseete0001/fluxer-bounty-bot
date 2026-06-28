@@ -177,6 +177,26 @@ impl DbManager {
         self.cached_guild_config.invalidate(&guild_id);
         Ok(())
     }
+
+    pub async fn set_delete_commands_upsert(
+        &self,
+        guild_id: Id<GuildMarker>,
+        delete_commands: bool,
+    ) -> anyhow::Result<()> {
+        sqlx::query!(
+            "INSERT INTO guilds (guild_id, bounty_submission_format, delete_commands)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (guild_id) DO UPDATE
+            SET delete_commands = $3",
+            guild_id.into_inner().cast_signed(),
+            serde_json::to_value(&BountySubmissionFormat::default())?,
+            delete_commands,
+        )
+        .execute(&self.pool)
+        .await?;
+        self.cached_guild_config.invalidate(&guild_id);
+        Ok(())
+    }
 }
 
 // Reordering the fields here will also change the PartialOrd and Ord implementation, be cautious
@@ -228,6 +248,7 @@ pub struct GuildConfig {
     pub bounty_submission_format: BountySubmissionFormat,
     pub command_channels: Option<Vec<Id<ChannelMarker>>>,
     pub current_bounty_number: i64,
+    pub delete_commands: bool,
 }
 
 impl TryFrom<GuildConfigSchema> for GuildConfig {
@@ -262,6 +283,7 @@ impl TryFrom<GuildConfigSchema> for GuildConfig {
                     .collect()
             }),
             current_bounty_number: value.current_bounty_number,
+            delete_commands: value.delete_commands,
         })
     }
 }
@@ -279,4 +301,5 @@ struct GuildConfigSchema {
     pub bounty_submission_format: serde_json::Value,
     pub command_channels: Option<Vec<i64>>,
     pub current_bounty_number: i64,
+    pub delete_commands: bool,
 }

@@ -1,8 +1,4 @@
-use fluxer_neptunium::{
-    create_embed,
-    exts::{MessageExt, UserExt},
-    http::endpoints::channel::EditMessage,
-};
+use fluxer_neptunium::{create_embed, exts::UserExt, http::endpoints::channel::EditMessage};
 
 use crate::{
     colors::{FAILURE, SUCCESS},
@@ -21,15 +17,11 @@ pub async fn bounty_stakeholder(ctx: CommandContext<'_>, args: &str) -> anyhow::
         "add" => add_bounty_stakeholder(ctx, args).await,
         "remove" | "rm" => remove_bounty_stakeholder(ctx, args).await,
         _ => {
-            ctx.message
-                .reply(
-                    ctx.ctx,
-                    create_embed!(
-                        description: "Unknown subcommand.",
-                        color: FAILURE,
-                    ),
-                )
-                .await?;
+            ctx.reply(create_embed!(
+                description: "Unknown subcommand.",
+                color: FAILURE,
+            ))
+            .await?;
             Ok(())
         }
     }
@@ -38,7 +30,7 @@ pub async fn bounty_stakeholder(ctx: CommandContext<'_>, args: &str) -> anyhow::
 async fn add_bounty_stakeholder(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<()> {
     let (bounty_num, rest) = get_bounty_num_from_args!(ctx, args, "add a stakeholder to");
     let Some((amount, rest)) = parse_amount(rest) else {
-        ctx.message.reply(ctx.ctx, create_embed!(
+        ctx.reply(create_embed!(
             description: "Could not parse the amount.\nSyntax: `b!stakeholder add <bounty id> <amount> <user> [note]`\nExample: `b!stakeholder add UkLWZ $10 someone`",
             color: FAILURE,
         )).await?;
@@ -49,30 +41,22 @@ async fn add_bounty_stakeholder(ctx: CommandContext<'_>, args: &str) -> anyhow::
         return Ok(());
     };
     let Some(user_id) = user_id else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "Could not find a user matching your query.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "Could not find a user matching your query.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     let note = note.trim();
     let note = if note.is_empty() { None } else { Some(note) };
 
     let Some(bounty) = ctx.db.get_bounty(ctx.guild_id, bounty_num).await? else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "A bounty with that ID doesn't exist.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "A bounty with that ID doesn't exist.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     #[expect(clippy::cast_possible_truncation)]
@@ -118,7 +102,7 @@ async fn add_bounty_stakeholder(ctx: CommandContext<'_>, args: &str) -> anyhow::
             .await?;
     }
 
-    ctx.message.reply(ctx.ctx, create_embed!(
+    ctx.reply(create_embed!(
         description: format!("Added bounty stakeholder <@{user_id}> on bounty `{}` with `${amount:.2}`.", bounty.bounty_number),
         color: SUCCESS,
     )).await?;
@@ -132,28 +116,20 @@ async fn remove_bounty_stakeholder(ctx: CommandContext<'_>, args: &str) -> anyho
         return Ok(());
     };
     let Some(user_id) = user_id else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "Could not find a user matching your query.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "Could not find a user matching your query.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
 
     let Some(bounty) = ctx.db.get_bounty(ctx.guild_id, bounty_num).await? else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "A bounty with that ID doesn't exist.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "A bounty with that ID doesn't exist.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     ctx.db
@@ -193,7 +169,7 @@ async fn remove_bounty_stakeholder(ctx: CommandContext<'_>, args: &str) -> anyho
             .await?;
     }
 
-    ctx.message.reply(ctx.ctx, create_embed!(
+    ctx.reply(create_embed!(
         description: format!("Removed bounty stakeholder <@{user_id}> from bounty `{}`.", bounty.bounty_number),
         color: SUCCESS,
     )).await?;

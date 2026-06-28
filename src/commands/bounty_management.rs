@@ -53,28 +53,20 @@ async fn set_bounty_state_common(
     let (bounty_num, _rest) = get_bounty_num_from_args!(ctx, args, operation);
 
     let Some(bounty) = ctx.db.get_bounty(ctx.guild_id, bounty_num).await? else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "A bounty with that ID does not exist.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "A bounty with that ID does not exist.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
 
     if bounty.state == new_state {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: format!("The bounty is already {}.", new_state.to_string().to_lowercase()),
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: format!("The bounty is already {}.", new_state.to_string().to_lowercase()),
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     }
 
@@ -132,9 +124,7 @@ async fn set_bounty_state_common(
         )
         .await?;
 
-    ctx.message
-        .reply(
-            ctx.ctx,
+    ctx.reply(
             create_embed!(
                 description: format!("Updated `{bounty_num}`, it is now {}", new_state.to_string().to_lowercase()),
                 color: SUCCESS,
@@ -164,15 +154,11 @@ pub async fn delete_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Resul
         .await
         .with_context(|| format!("Failed to delete bounty with number {bounty_num}"))?;
     let Some(bounty_data) = bounty_data else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "Bounty not found.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "Bounty not found.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     if let Some(BountyRelatedMessage {
@@ -188,15 +174,11 @@ pub async fn delete_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Resul
             .await
             .with_context(|| format!("Failed to delete related message of bounty {} message_id {message_id} and channel_id {channel_id}", bounty_data.bounty_id))?;
     }
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: format!("Deleted bounty `{bounty_num}`."),
-                color: SUCCESS,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: format!("Deleted bounty `{bounty_num}`."),
+        color: SUCCESS,
+    ))
+    .await?;
     Ok(())
 }
 
@@ -207,28 +189,20 @@ pub async fn assign_to_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Re
         return Ok(());
     };
     let Some(user_id) = user_id else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "Could not find a user matching the query.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "Could not find a user matching the query.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     let bounty = ctx.db.get_bounty(ctx.guild_id, bounty_num).await?;
     let Some(bounty) = bounty else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "A bounty with that ID does not exist.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "A bounty with that ID does not exist.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
 
@@ -264,15 +238,11 @@ pub async fn assign_to_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Re
             .await?;
     }
 
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: format!("Assigned <@{user_id}> to the bounty `{bounty_num}`."),
-                color: SUCCESS,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: format!("Assigned <@{user_id}> to the bounty `{bounty_num}`."),
+        color: SUCCESS,
+    ))
+    .await?;
 
     Ok(())
 }
@@ -282,32 +252,24 @@ pub async fn self_assign_to_bounty(ctx: CommandContext<'_>, args: &str) -> anyho
     let user_id = ctx.guild_member.id;
 
     let Some(bounty) = ctx.db.get_bounty(ctx.guild_id, bounty_num).await? else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "A bounty with that ID does not exist.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "A bounty with that ID does not exist.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
 
     if let Some(assigned_to) = bounty.assigned_to {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: format!("The bounty is already assigned to <@{assigned_to}>."),
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: format!("The bounty is already assigned to <@{assigned_to}>."),
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     }
     if bounty.state != BountyState::Approved {
-        ctx.message.reply(ctx.ctx, create_embed!(
+        ctx.reply(create_embed!(
             description: "You cannot assign yourself to this bounty because it is not in the correct state.",
             color: FAILURE,
         )).await?;
@@ -346,15 +308,11 @@ pub async fn self_assign_to_bounty(ctx: CommandContext<'_>, args: &str) -> anyho
             .await?;
     }
 
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: format!("Assigned yourself to the bounty `{bounty_num}`."),
-                color: SUCCESS,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: format!("Assigned yourself to the bounty `{bounty_num}`."),
+        color: SUCCESS,
+    ))
+    .await?;
 
     Ok(())
 }
@@ -364,27 +322,19 @@ pub async fn unassign_from_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow
 
     let bounty = ctx.db.get_bounty(ctx.guild_id, bounty_num).await?;
     let Some(bounty) = bounty else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "A bounty with that ID does not exist.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "A bounty with that ID does not exist.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     let Some(user_id) = bounty.assigned_to else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "No one is assigned to that bounty.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "No one is assigned to that bounty.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
 
@@ -420,15 +370,11 @@ pub async fn unassign_from_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow
             .await?;
     }
 
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: format!("Unassigned <@{user_id}> from the bounty `{bounty_num}`."),
-                color: SUCCESS,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: format!("Unassigned <@{user_id}> from the bounty `{bounty_num}`."),
+        color: SUCCESS,
+    ))
+    .await?;
 
     Ok(())
 }
@@ -438,27 +384,19 @@ pub async fn self_unassign_from_bounty(ctx: CommandContext<'_>, args: &str) -> a
 
     let bounty = ctx.db.get_bounty(ctx.guild_id, bounty_num).await?;
     let Some(bounty) = bounty else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "A bounty with that ID does not exist.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "A bounty with that ID does not exist.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     if bounty.assigned_to != Some(ctx.guild_member.id) {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "You are not assigned to that bounty.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "You are not assigned to that bounty.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     }
     ctx.db
@@ -492,15 +430,11 @@ pub async fn self_unassign_from_bounty(ctx: CommandContext<'_>, args: &str) -> a
             })
             .await?;
     }
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: format!("Unassigned you from `{bounty_num}`."),
-                color: SUCCESS,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: format!("Unassigned you from `{bounty_num}`."),
+        color: SUCCESS,
+    ))
+    .await?;
     Ok(())
 }
 
@@ -531,28 +465,20 @@ pub async fn edit_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<
             .map(|v| format!("`{v}`"))
             .collect::<Vec<String>>()
             .join(", ");
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: format!("Unknown field. Possible values are: {descriptor_list}"),
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: format!("Unknown field. Possible values are: {descriptor_list}"),
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     let bounty = ctx.db.get_bounty(ctx.guild_id, bounty_num).await?;
     let Some(mut bounty) = bounty else {
-        ctx.message
-            .reply(
-                ctx.ctx,
-                create_embed!(
-                    description: "A bounty with that ID does not exist.",
-                    color: FAILURE,
-                ),
-            )
-            .await?;
+        ctx.reply(create_embed!(
+            description: "A bounty with that ID does not exist.",
+            color: FAILURE,
+        ))
+        .await?;
         return Ok(());
     };
     if field_key == BountyInfoKey::Deadline {
@@ -560,7 +486,7 @@ pub async fn edit_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<
             None
         } else {
             let Some(timestamp) = Timestamp::<Iso8601>::parse(value) else {
-                ctx.message.reply(ctx.ctx, create_embed!(
+                ctx.reply(create_embed!(
                     description: format!("The timestamp provided in the due date could not be parsed. Make sure to format it in the Fluxer timestamp format."),
                     color: FAILURE,
                 )).await?;
@@ -612,15 +538,11 @@ pub async fn edit_bounty(ctx: CommandContext<'_>, args: &str) -> anyhow::Result<
             .await?;
     }
 
-    ctx.message
-        .reply(
-            ctx.ctx,
-            create_embed!(
-                description: format!("Updated the bounty content of `{bounty_num}`."),
-                color: SUCCESS,
-            ),
-        )
-        .await?;
+    ctx.reply(create_embed!(
+        description: format!("Updated the bounty content of `{bounty_num}`."),
+        color: SUCCESS,
+    ))
+    .await?;
 
     Ok(())
 }
