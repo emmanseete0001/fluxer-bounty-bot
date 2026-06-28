@@ -43,7 +43,7 @@ jobs:
           RANCHER_URL: ${{ secrets.RANCHER_URL }}
           RANCHER_TOKEN: ${{ secrets.RANCHER_TOKEN }}
           # Find your Project ID in the Rancher URL when viewing your cluster/project
-          PROJECT_ID: "c-nj4k9"
+          PROJECT_ID: "c-nj4k9:p-kjpzm"
           NAMESPACE: "fh-pilkey-fluxer-bounty-bot"
           WORKLOAD_NAME: "bot"
         run: |
