@@ -1,28 +1,21 @@
-FROM rust:1.96-slim AS builder
+ARG RUST_VERSION=1.96
+
+FROM rust:${RUST_VERSION} AS build
 
 WORKDIR /app
 
-# System deps needed to compile (openssl, etc.)
-RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# # Copy manifests first for better layer caching
-# COPY Cargo.toml Cargo.lock ./
-# 
-# # Copy the real source + the offline query cache
-# COPY src ./src
-# COPY .sqlx ./.sqlx
-# COPY .env ./.env
-
-# put the fries in the bag
-COPY . .
-
-# SQLX_OFFLINE=true skips the live DB connection during compilation
 ENV SQLX_OFFLINE=true
 
-RUN cargo build --release
+RUN --mount=type=bind,source=src,target=src \
+    --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
+    --mount=type=bind,source=Cargo.lock,target=Cargo.lock \
+    --mount=type=bind,source=.sqlx,target=.sqlx \
+    --mount=type=bind,source=migrations,target=migrations \
+    --mount=type=cache,target=/app/target/ \
+    --mount=type=cache,target=/usr/local/cargo/git/db \
+    --mount=type=cache,target=/usr/local/cargo/registry/ \
+    cargo build --locked --release && \
+    cp /app/target/release/bounty-bot /bin/bounty-bot
 
 FROM debian:trixie-slim AS runtime
 
@@ -33,7 +26,8 @@ RUN apt-get update && apt-get install -y \
     libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/target/release/bounty-bot ./bot
+COPY --from=build /bin/bounty-bot ./bounty-bot
+
 COPY .env ./.env
 
-CMD ["./bot"]
+CMD ["./bounty-bot"]
